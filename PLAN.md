@@ -27,8 +27,13 @@ since. This repo is the maintained, unofficial alternative.
 
 1. npm package `mcp-searchapi`, runnable via `npx -y mcp-searchapi` with
    `SEARCHAPI_API_KEY` set.
-2. PR to the modelcontextprotocol servers directory once the server is
-   real.
+2. Publish to the MCP Server Registry (registry.modelcontextprotocol.io)
+   via its quickstart: a `server.json` in the repo, submitted through the
+   registry's publish flow. The modelcontextprotocol/servers repo no
+   longer accepts new server implementations, and its README list of
+   third-party servers was retired in favour of the registry, so a PR
+   there would be rejected on sight. The registry is the right door
+   anyway: it is the discovery surface people actually browse.
 3. A docs snippet and demo recipe offered to SearchApi (out of this repo,
    and offered as an unofficial project unless they say otherwise).
 
@@ -56,6 +61,7 @@ test/
   snapshot-drift.test.ts gate 2: registry vs the dated docs snapshot
   envelope.test.ts       results can only leave as quoted data
   tools.test.ts          per-tool behaviour incl. trimming modes
+server.json              MCP Server Registry manifest (registry quickstart)
 .github/workflows/
   ci.yml                 build, lint, typecheck, test on node 20 and 22
   docs-drift.yml         weekly: live docs vs snapshot, opens an issue
@@ -118,6 +124,18 @@ exponential backoff capped by a configurable ceiling, and honour
 `Retry-After` when present. No silent fallbacks, no default-engine
 shrugging.
 
+### Quota surfacing
+
+SearchApi bills per search, and an agent in a loop is a runaway bill.
+When a response carries remaining-quota information (header or response
+field, wherever SearchApi documents it for the plan tier), the client
+passes it through as structured metadata on the tool result instead of
+dropping it. When a response carries nothing, nothing is invented: the
+metadata is simply absent. No local accounting, no estimates, no
+caching of a number that could be stale. The value of this is that a
+host or agent loop can watch the number it is given and stop, and it is
+the kind of detail a search vendor notices in a client.
+
 ### Context-window economy
 
 Agents pay per token, so trimming is a first-class feature, not an
@@ -140,29 +158,37 @@ HTTP client is mocked at its boundary so the whole suite runs offline.
 ### License
 
 MIT, added in the scaffold phase, not deferred to publish. It blocks npm
-publish and the MCP directory submission, and there is no reason to sit
-on it.
+publish and the registry submission, and there is no reason to sit on it.
 
 ## Phases
 
 1. **Scaffold**: pnpm, TypeScript strict, vitest, eslint, CI on node 20
    and 22, MIT LICENSE. Client and types compile, env validation in place.
 2. **google_search**: registry entry, dated docs snapshot, derived
-   schema, tool, envelope, trimming modes, mocked client tests. This is
-   the vertical slice, and it includes gate 1 and gate 2 for this engine.
-3. **Weekly docs-drift job**: scheduled workflow, issue on upstream diff.
-4. **More engines**: google_maps, google_jobs, google_scholar, youtube
-   search, each one registry entry, one snapshot, one thin tool file.
-5. **Publish prep**: npm metadata under `mcp-searchapi`, `npx` smoke test
-   in CI, README with a 30-second setup, then the MCP directory PR.
+   schema, tool, envelope, trimming modes, quota passthrough, mocked
+   client tests, and the weekly docs-drift workflow. This is the vertical
+   slice, and it includes gate 1 and gate 2 for this engine plus the
+   scheduled job that keeps the snapshot honest.
+3. **More engines**: google_news and google_shopping first, then
+   google_maps, google_jobs, google_scholar, youtube search. Each is one
+   registry entry, one snapshot, one thin tool file. The order is agent
+   demand: news and shopping are what agent users ask for and what
+   SearchApi itself leads with, maps and jobs are narrower verticals.
+4. **Publish prep**: npm metadata under `mcp-searchapi`, `npx` smoke test
+   in CI, README with a 30-second setup, `server.json` per the registry
+   quickstart, then submission to registry.modelcontextprotocol.io.
 
 ## Non-goals (for now)
 
 - No response caching layer: clients and hosts already do this better.
 - No account management: key-only, no OAuth dance.
 - No streaming: SearchApi responses are single-shot JSON.
+- No local quota accounting: pass through what the response says, never
+  estimate.
 - No official status: this stays an unofficial client until SearchApi
   says otherwise.
+- No modelcontextprotocol/servers PR: that repo is closed to new server
+  implementations; the registry is the route.
 
 ## Verification gates before anything ships
 
@@ -172,3 +198,7 @@ on it.
   weekly job keeps that snapshot honest.
 - The envelope test proves SERP text can only leave as quoted data.
 - A recorded fixture pins the response shape the trimmer depends on.
+- The quota passthrough is tested with both a quota-bearing and a
+  quota-less fixture, and invents nothing in the latter.
+- `server.json` validates against the registry's schema before phase 4
+  closes.
