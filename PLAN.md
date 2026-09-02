@@ -27,8 +27,13 @@ since. This repo is the maintained, unofficial alternative.
 
 1. npm package `mcp-searchapi`, runnable via `npx -y mcp-searchapi` with
    `SEARCHAPI_API_KEY` set.
-2. PR to the modelcontextprotocol servers directory once the server is
-   real.
+2. Publish to the MCP Server Registry (registry.modelcontextprotocol.io)
+   via its quickstart: a `server.json` in the repo, submitted through the
+   registry's publish flow. The modelcontextprotocol/servers repo no
+   longer accepts new server implementations, and its README list of
+   third-party servers was retired in favour of the registry, so a PR
+   there would be rejected on sight. The registry is the right door
+   anyway: it is the discovery surface people actually browse.
 3. A docs snippet and demo recipe offered to SearchApi (out of this repo,
    and offered as an unofficial project unless they say otherwise).
 
@@ -56,6 +61,7 @@ test/
   snapshot-drift.test.ts gate 2: registry vs the dated docs snapshot
   envelope.test.ts       results can only leave as quoted data
   tools.test.ts          per-tool behaviour incl. trimming modes
+server.json              MCP Server Registry manifest (registry quickstart)
 .github/workflows/
   ci.yml                 build, lint, typecheck, test on node 20 and 22
   docs-drift.yml         weekly: live docs vs snapshot, opens an issue
@@ -140,8 +146,7 @@ HTTP client is mocked at its boundary so the whole suite runs offline.
 ### License
 
 MIT, added in the scaffold phase, not deferred to publish. It blocks npm
-publish and the MCP directory submission, and there is no reason to sit
-on it.
+publish and the registry submission, and there is no reason to sit on it.
 
 ## Phases
 
@@ -154,7 +159,8 @@ on it.
 4. **More engines**: google_maps, google_jobs, google_scholar, youtube
    search, each one registry entry, one snapshot, one thin tool file.
 5. **Publish prep**: npm metadata under `mcp-searchapi`, `npx` smoke test
-   in CI, README with a 30-second setup, then the MCP directory PR.
+   in CI, README with a 30-second setup, `server.json` per the registry
+   quickstart, then submission to registry.modelcontextprotocol.io.
 
 ## Non-goals (for now)
 
@@ -163,6 +169,8 @@ on it.
 - No streaming: SearchApi responses are single-shot JSON.
 - No official status: this stays an unofficial client until SearchApi
   says otherwise.
+- No modelcontextprotocol/servers PR: that repo is closed to new server
+  implementations; the registry is the route.
 
 ## Verification gates before anything ships
 
@@ -172,3 +180,5 @@ on it.
   weekly job keeps that snapshot honest.
 - The envelope test proves SERP text can only leave as quoted data.
 - A recorded fixture pins the response shape the trimmer depends on.
+- `server.json` validates against the registry's schema before phase 5
+  closes.
