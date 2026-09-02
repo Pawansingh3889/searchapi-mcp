@@ -124,6 +124,18 @@ exponential backoff capped by a configurable ceiling, and honour
 `Retry-After` when present. No silent fallbacks, no default-engine
 shrugging.
 
+### Quota surfacing
+
+SearchApi bills per search, and an agent in a loop is a runaway bill.
+When a response carries remaining-quota information (header or response
+field, wherever SearchApi documents it for the plan tier), the client
+passes it through as structured metadata on the tool result instead of
+dropping it. When a response carries nothing, nothing is invented: the
+metadata is simply absent. No local accounting, no estimates, no
+caching of a number that could be stale. The value of this is that a
+host or agent loop can watch the number it is given and stop, and it is
+the kind of detail a search vendor notices in a client.
+
 ### Context-window economy
 
 Agents pay per token, so trimming is a first-class feature, not an
@@ -153,12 +165,16 @@ publish and the registry submission, and there is no reason to sit on it.
 1. **Scaffold**: pnpm, TypeScript strict, vitest, eslint, CI on node 20
    and 22, MIT LICENSE. Client and types compile, env validation in place.
 2. **google_search**: registry entry, dated docs snapshot, derived
-   schema, tool, envelope, trimming modes, mocked client tests. This is
-   the vertical slice, and it includes gate 1 and gate 2 for this engine.
-3. **Weekly docs-drift job**: scheduled workflow, issue on upstream diff.
-4. **More engines**: google_maps, google_jobs, google_scholar, youtube
-   search, each one registry entry, one snapshot, one thin tool file.
-5. **Publish prep**: npm metadata under `mcp-searchapi`, `npx` smoke test
+   schema, tool, envelope, trimming modes, quota passthrough, mocked
+   client tests, and the weekly docs-drift workflow. This is the vertical
+   slice, and it includes gate 1 and gate 2 for this engine plus the
+   scheduled job that keeps the snapshot honest.
+3. **More engines**: google_news and google_shopping first, then
+   google_maps, google_jobs, google_scholar, youtube search. Each is one
+   registry entry, one snapshot, one thin tool file. The order is agent
+   demand: news and shopping are what agent users ask for and what
+   SearchApi itself leads with, maps and jobs are narrower verticals.
+4. **Publish prep**: npm metadata under `mcp-searchapi`, `npx` smoke test
    in CI, README with a 30-second setup, `server.json` per the registry
    quickstart, then submission to registry.modelcontextprotocol.io.
 
@@ -167,6 +183,8 @@ publish and the registry submission, and there is no reason to sit on it.
 - No response caching layer: clients and hosts already do this better.
 - No account management: key-only, no OAuth dance.
 - No streaming: SearchApi responses are single-shot JSON.
+- No local quota accounting: pass through what the response says, never
+  estimate.
 - No official status: this stays an unofficial client until SearchApi
   says otherwise.
 - No modelcontextprotocol/servers PR: that repo is closed to new server
@@ -180,5 +198,7 @@ publish and the registry submission, and there is no reason to sit on it.
   weekly job keeps that snapshot honest.
 - The envelope test proves SERP text can only leave as quoted data.
 - A recorded fixture pins the response shape the trimmer depends on.
-- `server.json` validates against the registry's schema before phase 5
+- The quota passthrough is tested with both a quota-bearing and a
+  quota-less fixture, and invents nothing in the latter.
+- `server.json` validates against the registry's schema before phase 4
   closes.
